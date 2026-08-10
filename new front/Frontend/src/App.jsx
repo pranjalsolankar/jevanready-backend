@@ -3,11 +3,7 @@ import { API_BASE_URL } from './api';
 
 export default function App() {
   // Example:
-  fetch(`${API_BASE_URL}/api/auth/login`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(credentials)
-})
+  
 
   // Restore user session on initial load
   const [user, setUser] = useState(() => {
