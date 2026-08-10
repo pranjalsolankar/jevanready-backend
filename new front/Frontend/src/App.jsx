@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from './api';
 
 export default function App() {
+  // Example:
+  useEffect(() => {
+  fetch(`${API_BASE_URL}/api/users`)
+    .then(res => res.json())
+    .then(data => console.log(data));
+}, []);
+
   // Restore user session on initial load
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('jevan_user');
