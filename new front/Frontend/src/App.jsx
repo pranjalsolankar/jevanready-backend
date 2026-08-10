@@ -58,49 +58,53 @@ export default function App() {
       resetForm();
     };
 
-    const handleAuthSubmit = async (e) => {
-      e.preventDefault();
-      
-      const endpoint = isSignUp ? '/api/auth/register' : '/api/auth/login';
-      const payload = isSignUp 
-        ? { fullName, email, phone, password, role: roleTab }
-        : { fullName, email, password, role: roleTab };
+     // Make sure this import is at the very top of App.jsx
 
-      try {
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+const handleAuthSubmit = async (e) => {
+  e.preventDefault();
+  
+  // ADD `${API_BASE_URL}` HERE:
+  const endpoint = isSignUp ? `${API_BASE_URL}/api/auth/register` : `${API_BASE_URL}/api/auth/login`;
+  const payload = isSignUp 
+    ? { fullName, email, phone, password, role: roleTab }
+    : { fullName, email, password, role: roleTab };
 
-        if (response.ok) {
-          const userData = await response.json();
-          const authUser = { ...userData, role: roleTab };
-          handleSetUser(authUser);
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-          if (roleTab === 'student') {
-            setCurrentView('STUDENT_BROWSE');
-          } else {
-            // Check if owner already has a registered mess profile
-            const messRes = await fetch(`/api/mess/owner?email=${encodeURIComponent(email)}`);
-            if (messRes.ok) {
-              const messData = await messRes.json();
-              if (messData && messData.id) {
-                setCurrentView('OWNER_DASHBOARD');
-                return;
-              }
-            }
-            setCurrentView('OWNER_SETUP');
+    if (response.ok) {
+      const userData = await response.json();
+      const authUser = { ...userData, role: roleTab };
+      handleSetUser(authUser);
+
+      if (roleTab === 'student') {
+        setCurrentView('STUDENT_BROWSE');
+      } else {
+        // Check if owner already has a registered mess profile
+        // ADD `${API_BASE_URL}` HERE TOO:
+        const messRes = await fetch(`${API_BASE_URL}/api/mess/owner?email=${encodeURIComponent(email)}`);
+        if (messRes.ok) {
+          const messData = await messRes.json();
+          if (messData && messData.id) {
+            setCurrentView('OWNER_DASHBOARD');
+            return;
           }
-        } else {
-          const errorMsg = await response.text();
-          alert(`Error (${response.status}): ${errorMsg || 'Authentication failed'}`);
         }
-      } catch (err) {
-        console.error(err);
-        alert('Could not connect to backend server. Make sure Spring Boot is running.');
+        setCurrentView('OWNER_SETUP');
       }
-    };
+    } else {
+      const errorMsg = await response.text();
+      alert(`Error (${response.status}): ${errorMsg || 'Authentication failed'}`);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Could not connect to backend server. Make sure Render is live.');
+  }
+};
 
     return (
       <div 
