@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from './api';
 
 export default function App() {
-  // Example:
-  
-
   // Restore user session on initial load
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('jevan_user');
@@ -58,53 +55,48 @@ export default function App() {
       resetForm();
     };
 
-     // Make sure this import is at the very top of App.jsx
+    const handleAuthSubmit = async (e) => {
+      e.preventDefault();
+      
+      const endpoint = isSignUp ? `${API_BASE_URL}/api/auth/register` : `${API_BASE_URL}/api/auth/login`;
+      const payload = isSignUp 
+        ? { fullName, email, phone, password, role: roleTab }
+        : { fullName, email, password, role: roleTab };
 
-const handleAuthSubmit = async (e) => {
-  e.preventDefault();
-  
-  // ADD `${API_BASE_URL}` HERE:
-  const endpoint = isSignUp ? `${API_BASE_URL}/api/auth/register` : `${API_BASE_URL}/api/auth/login`;
-  const payload = isSignUp 
-    ? { fullName, email, phone, password, role: roleTab }
-    : { fullName, email, password, role: roleTab };
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+        if (response.ok) {
+          const userData = await response.json();
+          const authUser = { ...userData, role: roleTab };
+          handleSetUser(authUser);
 
-    if (response.ok) {
-      const userData = await response.json();
-      const authUser = { ...userData, role: roleTab };
-      handleSetUser(authUser);
-
-      if (roleTab === 'student') {
-        setCurrentView('STUDENT_BROWSE');
-      } else {
-        // Check if owner already has a registered mess profile
-        // ADD `${API_BASE_URL}` HERE TOO:
-        const messRes = await fetch(`${API_BASE_URL}/api/mess/owner?email=${encodeURIComponent(email)}`);
-        if (messRes.ok) {
-          const messData = await messRes.json();
-          if (messData && messData.id) {
-            setCurrentView('OWNER_DASHBOARD');
-            return;
+          if (roleTab === 'student') {
+            setCurrentView('STUDENT_BROWSE');
+          } else {
+            const messRes = await fetch(`${API_BASE_URL}/api/mess/owner?email=${encodeURIComponent(email)}`);
+            if (messRes.ok) {
+              const messData = await messRes.json();
+              if (messData && messData.id) {
+                setCurrentView('OWNER_DASHBOARD');
+                return;
+              }
+            }
+            setCurrentView('OWNER_SETUP');
           }
+        } else {
+          const errorMsg = await response.text();
+          alert(`Error (${response.status}): ${errorMsg || 'Authentication failed'}`);
         }
-        setCurrentView('OWNER_SETUP');
+      } catch (err) {
+        console.error(err);
+        alert('Could not connect to backend server.');
       }
-    } else {
-      const errorMsg = await response.text();
-      alert(`Error (${response.status}): ${errorMsg || 'Authentication failed'}`);
-    }
-  } catch (err) {
-    console.error(err);
-    alert('Could not connect to backend server. Make sure Render is live.');
-  }
-};
+    };
 
     return (
       <div 
@@ -188,7 +180,6 @@ const handleAuthSubmit = async (e) => {
               </button>
             </form>
 
-            {/* TOGGLE BETWEEN LOGIN & SIGN UP */}
             <div className="text-center pt-4 border-t border-slate-100">
               <p className="text-sm font-semibold text-slate-600">
                 {isSignUp ? "Already have an account?" : "First time visiting JEVAN.ready?"}
@@ -235,7 +226,7 @@ const handleAuthSubmit = async (e) => {
       formData.append('menu', menu);
       if (file) formData.append('mess_photo', file);
 
-      const endpoint = existingMess ? `/api/mess/update/${existingMess.id}` : '/api/mess/setup';
+      const endpoint = existingMess ? `${API_BASE_URL}/api/mess/update/${existingMess.id}` : `${API_BASE_URL}/api/mess/setup`;
       const method = existingMess ? 'PUT' : 'POST';
 
       try {
@@ -315,8 +306,7 @@ const handleAuthSubmit = async (e) => {
     const loadDashboardData = () => {
       if (!user?.email) return;
 
-      // Fetch bookings
-      fetch(`/api/bookings/owner?messName=${encodeURIComponent(user.fullName)}`)
+      fetch(`${API_BASE_URL}/api/bookings/owner?messName=${encodeURIComponent(user.fullName)}`)
         .then((res) => res.json())
         .then((data) => {
           setBookings(data.bookings || []);
@@ -324,8 +314,7 @@ const handleAuthSubmit = async (e) => {
         })
         .catch((err) => console.error(err));
 
-      // Fetch mess profile
-      fetch(`/api/mess/owner?email=${encodeURIComponent(user.email)}`)
+      fetch(`${API_BASE_URL}/api/mess/owner?email=${encodeURIComponent(user.email)}`)
         .then((res) => res.json())
         .then((data) => setMessDetails(data))
         .catch((err) => console.error(err));
@@ -340,7 +329,7 @@ const handleAuthSubmit = async (e) => {
       if (!window.confirm('Are you sure you want to delete your mess profile? This action cannot be undone.')) return;
 
       try {
-        const res = await fetch(`/api/mess/${messDetails.id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_BASE_URL}/api/mess/${messDetails.id}`, { method: 'DELETE' });
         if (res.ok) {
           alert('Mess profile deleted successfully.');
           setCurrentView('OWNER_SETUP');
@@ -435,7 +424,7 @@ const handleAuthSubmit = async (e) => {
     const [mealType, setMealType] = useState('Veg');
 
     const fetchMesses = () => {
-      fetch('/api/mess')
+      fetch(`${API_BASE_URL}/api/mess`)
         .then((res) => res.json())
         .then((data) => setMesses(data))
         .catch((err) => console.error(err));
@@ -443,7 +432,7 @@ const handleAuthSubmit = async (e) => {
 
     const fetchHistory = () => {
       if (!user?.email) return;
-      fetch(`/api/bookings/student?email=${encodeURIComponent(user.email)}`)
+      fetch(`${API_BASE_URL}/api/bookings/student?email=${encodeURIComponent(user.email)}`)
         .then((res) => res.json())
         .then((data) => setHistory(data))
         .catch((err) => console.error(err));
@@ -457,7 +446,7 @@ const handleAuthSubmit = async (e) => {
     const handleConfirmBooking = async (e) => {
       e.preventDefault();
       try {
-        const response = await fetch('/api/bookings', {
+        const response = await fetch(`${API_BASE_URL}/api/bookings`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -485,7 +474,7 @@ const handleAuthSubmit = async (e) => {
       if (!window.confirm('Are you sure you want to cancel this booking?')) return;
 
       try {
-        const response = await fetch(`/api/bookings/${bookingId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}`, {
           method: 'DELETE',
         });
 
@@ -537,7 +526,7 @@ const handleAuthSubmit = async (e) => {
                   <div>
                     {m.imagePath && (
                       <img 
-                        src={`http://localhost:8080${m.imagePath}`} 
+                        src={`${API_BASE_URL}${m.imagePath}`} 
                         alt={m.messName} 
                         className="w-full h-48 object-cover rounded-2xl mb-6"
                       />
