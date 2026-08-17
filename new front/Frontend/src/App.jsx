@@ -56,47 +56,49 @@ export default function App() {
     };
 
     const handleAuthSubmit = async (e) => {
-      e.preventDefault();
-      
-      const endpoint = isSignUp ? `${API_BASE_URL}/api/auth/register` : `${API_BASE_URL}/api/auth/login`;
-      const payload = isSignUp 
-        ? { fullName, email, phone, password, role: roleTab }
-        : { fullName, email, password, role: roleTab };
+    e.preventDefault();
+    
+    const endpoint = isSignUp ? `${API_BASE_URL}/api/auth/register` : `${API_BASE_URL}/api/auth/login`;
+    
+    // Ensure payload aligns with what your Spring Boot User entity expects
+    const payload = isSignUp 
+      ? { fullName, email, phone, password, role: roleTab }
+      : { email, password }; // During login, usually only email and password are required
 
-      try {
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-        if (response.ok) {
-          const userData = await response.json();
-          const authUser = { ...userData, role: roleTab };
-          handleSetUser(authUser);
+      if (response.ok) {
+        const userData = await response.json();
+        const authUser = { ...userData, role: roleTab };
+        handleSetUser(authUser);
 
-          if (roleTab === 'student') {
-            setCurrentView('STUDENT_BROWSE');
-          } else {
-            const messRes = await fetch(`${API_BASE_URL}/api/mess/owner?email=${encodeURIComponent(email)}`);
-            if (messRes.ok) {
-              const messData = await messRes.json();
-              if (messData && messData.id) {
-                setCurrentView('OWNER_DASHBOARD');
-                return;
-              }
-            }
-            setCurrentView('OWNER_SETUP');
-          }
+        if (roleTab === 'student') {
+          setCurrentView('STUDENT_BROWSE');
         } else {
-          const errorMsg = await response.text();
-          alert(`Error (${response.status}): ${errorMsg || 'Authentication failed'}`);
+          const messRes = await fetch(`${API_BASE_URL}/api/mess/owner?email=${encodeURIComponent(email)}`);
+          if (messRes.ok) {
+            const messData = await messRes.json();
+            if (messData && messData.id) {
+              setCurrentView('OWNER_DASHBOARD');
+              return;
+            }
+          }
+          setCurrentView('OWNER_SETUP');
         }
-      } catch (err) {
-        console.error(err);
-        alert('Could not connect to backend server.');
+      } else {
+        const errorMsg = await response.text();
+        alert(`Error (${response.status}): ${errorMsg || 'Authentication failed'}`);
       }
-    };
+    } catch (err) {
+      console.error(err);
+      alert('Could not connect to backend server.');
+    }
+  };
 
     return (
       <div 
