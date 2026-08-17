@@ -431,6 +431,7 @@ export default function App() {
         .then((data) => setMesses(data))
         .catch((err) => console.error(err));
     };
+    
 
     const fetchHistory = () => {
       if (!user?.email) return;
@@ -528,7 +529,7 @@ export default function App() {
                   <div>
                     {m.imagePath && (
                       <img 
-                        src={`${API_BASE_URL}${m.imagePath}`} 
+                        src={m.imagePath.startsWith('http') ? m.imagePath : `${API_BASE_URL}${m.imagePath}`} 
                         alt={m.messName} 
                         className="w-full h-48 object-cover rounded-2xl mb-6"
                       />
