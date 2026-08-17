@@ -16,7 +16,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/mess")
-@CrossOrigin(origins = "*")
 public class MessController {
 
     private final MessProfileRepository messProfileRepository;
